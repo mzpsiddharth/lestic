@@ -84,12 +84,13 @@ export async function createProduct(formData: FormData) {
   }
 
   const data = clean(parsed.data);
-  const quantity = data.quantity as number;
-  const status = deriveStatus(data.status as ProductStatus, quantity);
+  const { images_json, ...productData } = data;
+  const quantity = productData.quantity as number;
+  const status = deriveStatus(productData.status as ProductStatus, quantity);
 
   const supabase = await createClient();
-  const baseSlug = slugify(data.title as string);
-  const sku = (data.sku as string) || `LST-${Date.now().toString().slice(-6)}`;
+  const baseSlug = slugify(productData.title as string);
+  const sku = (productData.sku as string) || `LST-${Date.now().toString().slice(-6)}`;
 
   let slug = baseSlug;
   let attempt = 0;
@@ -104,11 +105,11 @@ export async function createProduct(formData: FormData) {
     slug = `${baseSlug}-${attempt}`;
   }
 
-  const images = parseImages(data.images_json as string | undefined);
+  const images = parseImages(images_json as string | undefined);
 
   const { data: product, error } = await supabase
     .from("products")
-    .insert({ ...data, slug, sku, status, quantity })
+    .insert({ ...productData, slug, sku, status, quantity })
     .select("id")
     .single();
 
@@ -139,15 +140,16 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 
   const data = clean(parsed.data);
-  const quantity = data.quantity as number;
-  const status = deriveStatus(data.status as ProductStatus, quantity);
+  const { images_json, ...productData } = data;
+  const quantity = productData.quantity as number;
+  const status = deriveStatus(productData.status as ProductStatus, quantity);
 
   const supabase = await createClient();
-  const images = parseImages(data.images_json as string | undefined);
+  const images = parseImages(images_json as string | undefined);
 
   const { error } = await supabase
     .from("products")
-    .update({ ...data, status, quantity })
+    .update({ ...productData, status, quantity })
     .eq("id", id);
 
   if (error) {

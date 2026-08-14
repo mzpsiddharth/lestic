@@ -9,7 +9,7 @@ import {
   Star,
   ClipboardList,
 } from "lucide-react";
-import { getProducts } from "@/lib/queries";
+import { getProducts, getAvailableProductCount } from "@/lib/queries";
 import { ProductCard } from "@/components/ProductCard";
 import { WHATSAPP_NUMBER, SITE_TAGLINE } from "@/lib/constants";
 
@@ -72,13 +72,17 @@ const steps = [
 
 export default async function HomePage() {
   let featured: Awaited<ReturnType<typeof getProducts>> = [];
+  let available = 0;
   try {
     featured = await getProducts({ limit: 8 });
   } catch {
     featured = [];
   }
-
-  const available = featured.filter((p) => p.status === "available");
+  try {
+    available = await getAvailableProductCount();
+  } catch {
+    available = 0;
+  }
 
   return (
     <div>
@@ -102,7 +106,7 @@ export default async function HomePage() {
             </Link>
           </div>
           <p className="mt-8 text-sm text-slate-500">
-            {available.length} laptops currently available
+            {available} laptops currently available
           </p>
         </div>
       </section>

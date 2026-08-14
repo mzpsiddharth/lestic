@@ -207,3 +207,24 @@ drop policy if exists "product_images_bucket_admin_delete" on storage.objects;
 create policy "product_images_bucket_admin_delete"
   on storage.objects for delete
   using (bucket_id = 'product-images' and public.is_admin());
+
+-- ============================================================
+-- TABLE / SEQUENCE / FUNCTION PRIVILEGES
+-- RLS controls which rows roles can see or change, but the roles
+-- still need table-level privileges to run queries at all. Tables
+-- created via the SQL editor may not receive Supabase's automatic
+-- grants, which produces "permission denied for table ...".
+-- GRANT statements are idempotent — safe to run multiple times.
+-- ============================================================
+
+grant all on all tables in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant execute on all functions in schema public to anon, authenticated, service_role;
+
+-- New tables/sequences/functions created later get the same privileges.
+alter default privileges in schema public
+  grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public
+  grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public
+  grant execute on functions to anon, authenticated, service_role;

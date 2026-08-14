@@ -32,7 +32,7 @@ Lestic is **not e-commerce**. There is no online checkout. Customers enquire, Le
 2. Open **SQL Editor → New query**, paste the entire contents of [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates all tables, row-level security policies, and the image storage bucket.
 3. Open **Project Settings → API** and copy:
    - **Project URL** (`https://xxxx.supabase.co`)
-   - **anon public** key
+   - **publishable** key (public key — safe to expose)
    - **service_role** key (secret — keep it server-side only)
 
 ### 2. Configure the project
@@ -45,7 +45,7 @@ Fill in `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_WHATSAPP_NUMBER=919876543210

@@ -72,7 +72,9 @@ async function CatalogContent({
   }
 
   const totalListings = products.length;
-  const available = products.filter((p) => p.status === "available").length;
+  const available = products.filter(
+    (p) => p.status === "available" && p.quantity > 0
+  ).length;
 
   return (
     <div className="container-lestic py-10">

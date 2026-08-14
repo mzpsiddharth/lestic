@@ -65,7 +65,7 @@ export function ProductCard({
               {formatINR(product.price)}
             </p>
             <p className="text-xs text-slate-500">
-              {product.quantity > 0 ? `${product.quantity} available` : "Sold out"}
+              {product.quantity > 0 ? "Available" : "Sold out"}
             </p>
           </div>
           <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 group-hover:gap-2 transition-all">

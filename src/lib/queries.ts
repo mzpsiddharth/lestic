@@ -31,6 +31,19 @@ export async function getProducts(extra: {
   return (data ?? []) as ProductWithImages[];
 }
 
+export async function getAvailableProductCount(): Promise<number> {
+  if (!hasSupabaseEnv()) return 0;
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("products")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "available")
+    .gt("quantity", 0);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function getProductBySlug(
   slug: string
 ): Promise<ProductWithImages | null> {

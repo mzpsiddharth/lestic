@@ -93,9 +93,7 @@ export default async function ProductPage({ params }: Props) {
                 {formatINR(product.price)}
               </p>
               {product.quantity > 0 && (
-                <p className="text-sm text-emerald-600">
-                  {product.quantity} unit{product.quantity > 1 ? "s" : ""} available
-                </p>
+                <p className="text-sm text-emerald-600">Available</p>
               )}
             </div>
 
