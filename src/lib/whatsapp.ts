@@ -29,3 +29,12 @@ export function buildSellerMessage(lead: {
 }): string {
   return `Hello ${lead.customer_name}, this is Lestic regarding your enquiry for the ${lead.product_title}.`;
 }
+
+export function buildContactMessage(lead: {
+  customer_name: string;
+  message?: string | null;
+}): string {
+  return `Hello ${lead.customer_name}, this is Lestic. We received your enquiry${
+    lead.message ? `: "${lead.message}"` : ""
+  }. How can we help?`;
+}

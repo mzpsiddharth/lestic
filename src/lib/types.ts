@@ -1,5 +1,6 @@
 export type ProductStatus = "draft" | "available" | "sold_out" | "hidden";
 export type LeadStatus = "new" | "contacted" | "inspection" | "negotiation" | "purchased" | "lost";
+export type LeadType = "booking" | "contact";
 
 export interface Product {
   id: string;
@@ -53,6 +54,8 @@ export interface Lead {
   price_at_enquiry: number | null;
   customer_name: string;
   whatsapp: string;
+  email: string | null;
+  lead_type: LeadType;
   address: string | null;
   city: string | null;
   state: string | null;

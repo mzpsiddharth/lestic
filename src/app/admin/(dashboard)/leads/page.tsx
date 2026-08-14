@@ -108,7 +108,13 @@ export default async function LeadsPage({
                     </Link>
                   </td>
                   <td className="max-w-[220px] px-4 py-3">
-                    <p className="truncate text-slate-700">{lead.product_title}</p>
+                    {lead.lead_type === "contact" ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                        General enquiry
+                      </span>
+                    ) : (
+                      <p className="truncate text-slate-700">{lead.product_title}</p>
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-900">
                     {formatINR(lead.price_at_enquiry)}

@@ -143,6 +143,22 @@ export async function submitContact(
     return { error: "Too many requests. Please try again later." };
   }
 
+  const supabase = await createClient();
+
+  const { error: leadError } = await supabase.from("leads").insert({
+    lead_type: "contact",
+    product_title: "General enquiry",
+    customer_name: parsed.data.name,
+    whatsapp: normalizePhone(parsed.data.whatsapp),
+    email: parsed.data.email || null,
+    message: parsed.data.message,
+  });
+
+  if (leadError) {
+    console.error("Contact lead insert failed:", leadError.message);
+    return { error: "Something went wrong. Please try again." };
+  }
+
   if (process.env.GOOGLE_SHEETS_WEBHOOK_URL) {
     await fetch(process.env.GOOGLE_SHEETS_WEBHOOK_URL, {
       method: "POST",
@@ -151,10 +167,13 @@ export async function submitContact(
         product_title: "General enquiry",
         customer_name: parsed.data.name,
         whatsapp: normalizePhone(parsed.data.whatsapp),
+        email: parsed.data.email || "",
         message: parsed.data.message,
       }),
     }).catch(() => {});
   }
+
+  revalidatePath("/admin/leads");
 
   return { success: true };
 }

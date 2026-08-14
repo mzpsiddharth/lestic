@@ -55,6 +55,9 @@ create table if not exists public.leads (
   price_at_enquiry int,
   customer_name text not null,
   whatsapp text not null,
+  email text,
+  lead_type text not null default 'booking'
+    check (lead_type in ('booking', 'contact')),
   address text,
   city text,
   state text,
@@ -67,6 +70,11 @@ create table if not exists public.leads (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Migration for databases created before the lead_type/email columns existed.
+-- Idempotent — safe to run multiple times.
+alter table public.leads add column if not exists email text;
+alter table public.leads add column if not exists lead_type text not null default 'booking';
 
 -- ---------- VIEW COUNTER ----------
 create or replace function public.increment_view_count(row_id uuid)

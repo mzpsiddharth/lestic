@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   MessageCircle,
   Phone,
+  Mail,
   MapPin,
   Clock,
   StickyNote,
@@ -15,7 +16,11 @@ import {
 } from "lucide-react";
 import { getLeadById } from "@/lib/queries";
 import { formatINR, formatDateTime, getInitials } from "@/lib/utils";
-import { waLinkForCustomer, buildSellerMessage } from "@/lib/whatsapp";
+import {
+  waLinkForCustomer,
+  buildSellerMessage,
+  buildContactMessage,
+} from "@/lib/whatsapp";
 import { LeadStatusBadge } from "@/components/LeadStatusBadge";
 import { StatusSelector, NotesEditor, DeleteLeadButton } from "@/components/LeadActions";
 
@@ -46,9 +51,19 @@ export default async function LeadDetailPage({
   const lead = await getLeadById(id);
   if (!lead) notFound();
 
+  const isContact = lead.lead_type === "contact";
+
   const waLink = waLinkForCustomer(
     lead.whatsapp,
-    buildSellerMessage({ customer_name: lead.customer_name, product_title: lead.product_title })
+    isContact
+      ? buildContactMessage({
+          customer_name: lead.customer_name,
+          message: lead.message,
+        })
+      : buildSellerMessage({
+          customer_name: lead.customer_name,
+          product_title: lead.product_title,
+        })
   );
 
   return (
@@ -99,15 +114,20 @@ export default async function LeadDetailPage({
           </h2>
           <div className="mt-2 divide-y divide-slate-100">
             <InfoRow icon={Phone} label="WhatsApp / Mobile" value={lead.whatsapp} />
-            <InfoRow icon={MapPin} label="Address" value={lead.address} />
-            <InfoRow
-              icon={MapPin}
-              label="City / State"
-              value={[lead.city, lead.state].filter(Boolean).join(", ") || null}
-            />
-            <InfoRow icon={Hash} label="PIN code" value={lead.pin} />
-            <InfoRow icon={Clock} label="Preferred contact time" value={lead.preferred_contact_time} />
-            {lead.message && (
+            <InfoRow icon={Mail} label="Email" value={lead.email} />
+            {!isContact && <InfoRow icon={MapPin} label="Address" value={lead.address} />}
+            {!isContact && (
+              <InfoRow
+                icon={MapPin}
+                label="City / State"
+                value={[lead.city, lead.state].filter(Boolean).join(", ") || null}
+              />
+            )}
+            {!isContact && <InfoRow icon={Hash} label="PIN code" value={lead.pin} />}
+            {!isContact && (
+              <InfoRow icon={Clock} label="Preferred contact time" value={lead.preferred_contact_time} />
+            )}
+            {isContact && lead.message && (
               <div className="py-2">
                 <p className="text-xs text-slate-500">Message</p>
                 <p className="mt-0.5 text-sm text-slate-800">{lead.message}</p>
@@ -118,23 +138,46 @@ export default async function LeadDetailPage({
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 lg:col-span-2">
           <h2 className="flex items-center gap-2 font-bold text-slate-900">
-            <Laptop className="h-4 w-4 text-brand-600" /> Laptop Information
+            {isContact ? (
+              <>
+                <User className="h-4 w-4 text-brand-600" /> General Enquiry
+              </>
+            ) : (
+              <>
+                <Laptop className="h-4 w-4 text-brand-600" /> Laptop Information
+              </>
+            )}
           </h2>
 
-          <div className="mt-3">
-            <p className="text-lg font-semibold text-slate-900">{lead.product_title}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
-              {lead.product_sku && <span>ID: {lead.product_sku}</span>}
-              <span>
-                Price at enquiry:{" "}
-                <span className="font-semibold text-slate-900">
-                  {formatINR(lead.price_at_enquiry)}
-                </span>
-              </span>
+          {isContact ? (
+            <div className="mt-3">
+              <p className="text-lg font-semibold text-slate-900">General contact enquiry</p>
+              <p className="mt-1 text-sm text-slate-600">
+                Submitted from the Contact Us page.
+              </p>
+              {lead.message && (
+                <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                  <p className="text-xs text-slate-500">Enquiry message</p>
+                  <p className="mt-1 text-sm text-slate-800">{lead.message}</p>
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="mt-3">
+              <p className="text-lg font-semibold text-slate-900">{lead.product_title}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
+                {lead.product_sku && <span>ID: {lead.product_sku}</span>}
+                <span>
+                  Price at enquiry:{" "}
+                  <span className="font-semibold text-slate-900">
+                    {formatINR(lead.price_at_enquiry)}
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
 
-          {lead.product ? (
+          {!isContact && lead.product ? (
             <dl className="mt-4 grid gap-x-6 gap-y-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
               {[
                 ["Processor", lead.product.processor],
@@ -154,12 +197,14 @@ export default async function LeadDetailPage({
               )}
             </dl>
           ) : (
-            <p className="mt-3 text-sm text-slate-500">
-              The linked laptop has been deleted.
-            </p>
+            !isContact && (
+              <p className="mt-3 text-sm text-slate-500">
+                The linked laptop has been deleted.
+              </p>
+            )
           )}
 
-          {lead.product?.slug && (
+          {!isContact && lead.product?.slug && (
             <Link
               href={`/laptops/${lead.product.slug}`}
               target="_blank"
