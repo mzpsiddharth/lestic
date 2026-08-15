@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useRef } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import {
   BRANDS,
   RAM_OPTIONS,
@@ -88,12 +88,11 @@ export function FilterPanel() {
       </div>
 
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           defaultValue={val("q")}
           onChange={(e) => onSearch(e.target.value)}
           placeholder="Search laptops..."
-          className="input-lestic pl-9"
+          className="input-lestic"
         />
       </div>
 
