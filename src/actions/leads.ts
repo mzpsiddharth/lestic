@@ -34,7 +34,15 @@ export async function updateLeadNotes(id: string, notes: string) {
 
 export async function deleteLead(id: string) {
   const supabase = await createClient();
-  await supabase.from("leads").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("leads")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Lead not found or already deleted." };
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
+  return { ok: true };
 }

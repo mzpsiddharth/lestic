@@ -183,6 +183,10 @@ create policy "leads_admin_update"
   on public.leads for update
   using (public.is_admin());
 
+create policy "leads_admin_delete"
+  on public.leads for delete
+  using (public.is_admin());
+
 -- ---------- ADMIN USERS ----------
 create policy "admin_users_admin_select"
   on public.admin_users for select
