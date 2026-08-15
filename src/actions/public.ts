@@ -5,12 +5,22 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { bookingSchema, contactSchema } from "@/lib/validation";
-import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { clientIp, rateLimit, persistentRateLimit } from "@/lib/rate-limit";
 import { normalizePhone } from "@/lib/whatsapp";
 
 export async function trackView(productId: string) {
+  const headersStore = await headers();
+  const ip = clientIp(headersStore);
   const supabase = await createClient();
-  await supabase.rpc("increment_view_count", { row_id: productId });
+
+  const allowed = await persistentRateLimit(supabase, `views:${ip}`, 30, 60);
+  if (!allowed) return;
+
+  try {
+    await supabase.rpc("increment_view_count", { row_id: productId });
+  } catch (err) {
+    console.error("trackView failed:", err);
+  }
 }
 
 export async function submitBooking(
@@ -50,6 +60,11 @@ export async function submitBooking(
   }
 
   const supabase = await createClient();
+
+  const phoneKey = `phone:${normalizePhone(parsed.data.whatsapp)}`;
+  if (!(await persistentRateLimit(supabase, phoneKey, 3, 3600))) {
+    return { error: "Too many requests. Please try again later." };
+  }
 
   const { data: product, error: productError } = await supabase
     .from("products")
@@ -144,6 +159,11 @@ export async function submitContact(
   }
 
   const supabase = await createClient();
+
+  const phoneKey = `phone:${normalizePhone(parsed.data.whatsapp)}`;
+  if (!(await persistentRateLimit(supabase, phoneKey, 3, 3600))) {
+    return { error: "Too many requests. Please try again later." };
+  }
 
   const { error: leadError } = await supabase.from("leads").insert({
     lead_type: "contact",

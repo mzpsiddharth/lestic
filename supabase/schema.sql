@@ -221,6 +221,66 @@ create policy "product_images_bucket_admin_delete"
   using (bucket_id = 'product-images' and public.is_admin());
 
 -- ============================================================
+-- RATE LIMITING
+-- Dedicated counter storage for serverless-safe rate limiting.
+-- Stores only a key + timestamp per event — no personal data.
+-- RLS is enabled with NO policies, so anon/authenticated are blocked
+-- from every row operation even though the PRIVILEGES block below
+-- grants table access; only rate_limit_hit (security definer) and
+-- service_role can read/write these rows.
+-- ============================================================
+create table if not exists public.rate_limits (
+  id bigint generated always as identity primary key,
+  rkey text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists rate_limits_rkey_created_idx
+  on public.rate_limits (rkey, created_at);
+
+create index if not exists rate_limits_created_idx
+  on public.rate_limits (created_at);
+
+alter table public.rate_limits enable row level security;
+
+-- Atomic check-and-record. The per-key advisory lock serializes
+-- concurrent calls, so two simultaneous requests for the same key
+-- cannot both pass the limit. Returns true if allowed, false if over.
+create or replace function public.rate_limit_hit(
+  p_key text,
+  p_limit int,
+  p_window_seconds int
+) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  hit_count int;
+begin
+  p_limit := least(greatest(p_limit, 1), 1000);
+  p_window_seconds := least(greatest(p_window_seconds, 1), 86400);
+
+  perform pg_advisory_xact_lock(hashtextextended(p_key, 0));
+
+  delete from public.rate_limits
+  where rkey = p_key
+    and created_at < now() - (p_window_seconds * interval '1 second');
+
+  -- Bound the table regardless of key churn.
+  delete from public.rate_limits where created_at < now() - interval '1 day';
+
+  select count(*) into hit_count
+  from public.rate_limits
+  where rkey = p_key;
+
+  if hit_count >= p_limit then
+    return false;
+  end if;
+
+  insert into public.rate_limits (rkey) values (p_key);
+  return true;
+end;
+$$;
+
+-- ============================================================
 -- TABLE / SEQUENCE / FUNCTION PRIVILEGES
 -- RLS controls which rows roles can see or change, but the roles
 -- still need table-level privileges to run queries at all. Tables
@@ -240,3 +300,12 @@ alter default privileges in schema public
   grant all on sequences to anon, authenticated, service_role;
 alter default privileges in schema public
   grant execute on functions to anon, authenticated, service_role;
+
+-- ---------- RATE LIMITING PRIVILEGES ----------
+-- Make the limiter callable by the public roles (server actions run as
+-- anon/authenticated). The table itself stays locked down: revoke the
+-- broad grants above so clients cannot read/delete rate-limit rows.
+grant execute on function public.rate_limit_hit(text, int, int)
+  to anon, authenticated, service_role;
+
+revoke all on table public.rate_limits from anon, authenticated;
